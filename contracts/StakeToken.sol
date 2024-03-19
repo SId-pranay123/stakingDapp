@@ -10,3 +10,5 @@ contract StakeToken is ERC20 {
     }
 
 }
+
+//0x2b8df9521e692FD4360e67cE19e5F5109ce7C1B3

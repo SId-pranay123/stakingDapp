@@ -6,10 +6,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
+import "./stToken.sol";
+
 contract Staking is ReentrancyGuard{
   using SafeMath for uint256;
   IERC20 public s_stakingToken;
   IERC20 public s_rewardToken;
+  stToken public s_stToken;
 
   uint public constant REWARD_RATE=1e18;
   uint private totalStakedTokens;
@@ -24,9 +27,10 @@ contract Staking is ReentrancyGuard{
   event Withdrawn(address indexed user, uint256 indexed amount);
   event RewardsClaimed(address indexed user, uint256 indexed amount);
   
-  constructor(address stakingToken,address rewardToken){
+  constructor(address stakingToken,address rewardToken, address _stToken){
     s_stakingToken=IERC20(stakingToken);
     s_rewardToken=IERC20(rewardToken);
+    s_stToken = stToken(_stToken);
   }
 
   function rewardPerToken() public view returns(uint){
@@ -56,15 +60,19 @@ contract Staking is ReentrancyGuard{
     stakedBalance[msg.sender]=stakedBalance[msg.sender].add(amount);
     emit Staked(msg.sender,amount);
     bool success = s_stakingToken.transferFrom(msg.sender,address(this),amount);
+    s_stToken.mint(msg.sender, amount.div(10**18));
     require(success,"Transfer Failed");
   }
+
+
   function withdrawStakedTokens(uint amount) external nonReentrant updateReward(msg.sender)  {
     require(amount>0,"Amount must be greater than zero");
     require(stakedBalance[msg.sender]>=amount,"Staked amount not enough");
     totalStakedTokens=totalStakedTokens.sub(amount);
     stakedBalance[msg.sender]=stakedBalance[msg.sender].sub(amount);
-    emit Withdrawn(msg.sender, amount);(msg.sender,amount);
+    emit Withdrawn(msg.sender, amount);
     bool success = s_stakingToken.transfer(msg.sender,amount);
+    s_stToken.burnStTokens(msg.sender, amount.div(10**18));
     require(success,"Transfer Failed");
   }
 
@@ -78,4 +86,5 @@ contract Staking is ReentrancyGuard{
   }
 }
 
-//Stake time  1709706654
+
+//0x74D57778511f9E0E264E92Ae811D6d8dCF64b7e4
